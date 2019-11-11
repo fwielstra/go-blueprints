@@ -7,4 +7,6 @@ build:
 start-server:
 	./bin/chat
 
-start: build start-server
+start:
+	make build
+	make start-server
