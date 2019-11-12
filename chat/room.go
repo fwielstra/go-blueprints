@@ -5,30 +5,35 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/stretchr/objx"
+
 	"github.com/gorilla/websocket"
 )
 
 type room struct {
 	// forward is a channel that holds incoming messages that should be forwarded to the other clients.
-	forward chan []byte
+	forward chan *message
 	join    chan *client
 	leave   chan *client
 	clients map[*client]bool
 	tracer  trace.Tracer
 }
 
+// Note on pointers vs values: It makes no sense to pass by value because the channels in a room should be persistent
+// entities, and the room itself is pretty much a global object.
+// Concurrent access to the channels should be covered by channel mechanics anyway.
 func (r *room) run() {
 	for {
 		select {
 		case client := <-r.join:
 			r.clients[client] = true
-			r.tracer.Trace("New client joined")
+			r.tracer.Trace("Client joined: ", client.userData["name"])
 		case client := <-r.leave:
 			delete(r.clients, client)
 			close(client.send)
-			r.tracer.Trace("Client left")
+			r.tracer.Trace("Client left: ", client.userData["name"])
 		case msg := <-r.forward:
-			r.tracer.Trace("Message received: ", string(msg))
+			r.tracer.Trace("Message received: ", msg.Message)
 			for client := range r.clients {
 				client.send <- msg
 				r.tracer.Trace(" -- sent to client")
@@ -53,11 +58,19 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	authCookie, err := req.Cookie("auth")
+
+	if err != nil {
+		log.Fatal("Failed to get auth cookie:", err)
+		return
+	}
+
 	// Create client, pass it a reference to the room so read() can forward incoming messages
 	client := &client{
-		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
+		socket:   socket,
+		send:     make(chan *message, messageBufferSize),
+		room:     r,
+		userData: objx.MustFromBase64(authCookie.Value),
 	}
 
 	r.join <- client
@@ -79,7 +92,7 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func newRoom() *room {
 	return &room{
-		forward: make(chan []byte),
+		forward: make(chan *message),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
