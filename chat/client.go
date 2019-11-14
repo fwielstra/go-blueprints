@@ -25,6 +25,10 @@ func (c *client) read() {
 		// enrich incoming message with timestamp and poster
 		msg.When = time.Now()
 		msg.Name = c.userData["name"].(string)
+		// pattern to get a value that may not be present (e.g. can be nil); ignore error condition.
+		if avatarURL, ok := c.userData["avatar_url"]; ok {
+			msg.AvatarURL = avatarURL.(string)
+		}
 		c.room.forward <- msg
 	}
 }

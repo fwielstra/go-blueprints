@@ -45,10 +45,14 @@
         socket = new WebSocket("ws://{{.Host}}/room");
         socket.onclose = () => console.log("Connection has been closed");
         socket.onmessage = (e) => {
-            const {When, Name, Message} = JSON.parse(e.data);
+            const {When, Name, Message, AvatarURL} = JSON.parse(e.data);
             const when = new Date(When);
             messages.append(
                 $("<li>").append(
+                    $("<img>").css({
+						width: 50,
+						verticalAlign: "middle",
+					}).attr("src", AvatarURL),
                     $("<span>").text(`[${when.toLocaleTimeString()}] `),
                     $("<strong>").text(Name + ": "),
                     $("<span>").text(Message)
