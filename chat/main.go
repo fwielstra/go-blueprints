@@ -19,16 +19,13 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-// commandline flags
-var (
-	addr = flag.String("addr", ":8080", "The addr of the application")
-)
-
 type templateHandler struct {
 	once     sync.Once
 	filename string
 	templ    *template.Template
 }
+
+var port = os.Getenv("PORT")
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
@@ -84,9 +81,9 @@ func main() {
 	go r.run()
 
 	// start the web server
-	log.Println("Starting chat server on", *addr)
+	log.Println("Starting chat server on", port)
 	// actually does ListenAndServe continue running until err?
-	if err := http.ListenAndServe(*addr, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
