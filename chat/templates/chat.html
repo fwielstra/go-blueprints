@@ -1,25 +1,37 @@
 <html>
 <head>
-	<title>Chat</title>
-	<style>
-		input {
-			display: block;
-		}
+    <title>Chat</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        ul#messages {
+            list-style: none
+        }
 
-		ul {
-			list-style: none;
-		}
-	</style>
+        ul#messages li {
+            margin-bottom: 2px;
+        }
+
+        ul#messages li img {
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
-<ul id="messages">
-	<form id="chatbox">
-        {{.UserData.name}}: <br/>
-		<textarea></textarea>
-		<input type="submit" value="Send"/>
-		or <a href="/logout">logout</a>
-	</form>
-</ul>
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <ul id="messages"></ul>
+        </div>
+    </div>
+
+    <form id="chatbox" role="form">
+        <div class="form-group">
+            <label for="message">Send a message as {{.UserData.name}} or <a href="/logout">logout</a></label>
+        </div>
+        <textarea id="message" class="form-control"></textarea>
+        <input type="submit" value="Send" class="btn btn-default"/>
+    </form>
+</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
@@ -48,14 +60,16 @@
         socket.onmessage = (e) => {
             const {When, Name, Message, AvatarURL} = JSON.parse(e.data);
             const when = new Date(When);
+            console.log(AvatarURL);
             messages.append(
                 $("<li>").append(
                     $("<img>").css({
-						width: 50,
-						verticalAlign: "middle",
-					}).attr("src", AvatarURL),
+                        width: 50,
+                        verticalAlign: "middle",
+                    })
+                        .attr("src", AvatarURL)
+                        .attr("title", Name),
                     $("<span>").text(`[${when.toLocaleTimeString()}] `),
-                    $("<strong>").text(Name + ": "),
                     $("<span>").text(Message)
                 )
             );
