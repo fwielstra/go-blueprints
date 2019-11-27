@@ -60,6 +60,10 @@ func main() {
 	r.tracer = trace.New(os.Stdout)
 
 	// set up HTTP routes
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "/chat")
+		w.WriteHeader(http.StatusPermanentRedirect)
+	})
 	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
 	http.Handle("/login", &templateHandler{filename: "login.html"})
 	http.HandleFunc("/auth/", loginHandler)
