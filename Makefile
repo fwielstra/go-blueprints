@@ -13,6 +13,10 @@ coverage-html: coverage
 build:
 	go build -o ./bin/chat ./chat
 
+lint:
+	golangci-lint run
+	golint chat trace
+
 start-server:
 	./bin/chat
 
