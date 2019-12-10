@@ -19,3 +19,4 @@
 # no need to commit compiled files
 bin/
 .env
+avatars/

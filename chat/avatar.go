@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path"
 )
 
 //ErrNoAvatarURL is a predefined error returned when any issue occurs determining a user's avatar.
@@ -58,4 +60,28 @@ func (GravatarAvatar) GetAvatarURL(c *client) (string, error) {
 	}
 
 	return fmt.Sprintf("//www.gravatar.com/avatar/%s", userIDStr), nil
+}
+
+//FileSystemAvatar is an impelentation of `Avatar` that returns avatar urls (named by the user ID) from the local
+// webserver.
+type FileSystemAvatar struct{}
+
+//UseFileSystemAvatar is an utility to fetch a client's avatar url using the filesystem strategy.
+var UseFileSystemAvatar FileSystemAvatar
+
+//GetAvatarURL attempts to find a matching file in the avatar folder for the user's ID.
+func (FileSystemAvatar) GetAvatarURL(c *client) (string, error) {
+	userid, ok := c.userData["userid"]
+
+	if !ok {
+		return "", ErrNoAvatarURL
+	}
+
+	userIDStr, ok := userid.(string)
+
+	if !ok {
+		return "", ErrNoAvatarURL
+	}
+
+	return "/avatars/" + userIDStr + ".jpg", nil
 }
