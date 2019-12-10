@@ -44,7 +44,11 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		data["UserData"] = objx.MustFromBase64(authCookie.Value)
 	}
 
-	t.templ.Execute(w, data)
+	err := t.templ.Execute(w, data)
+
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 func main() {
@@ -56,7 +60,7 @@ func main() {
 	)
 
 	// create room
-	r := newRoom()
+	r := newRoom(UseGravatar)
 	r.tracer = trace.New(os.Stdout)
 
 	// set up HTTP routes

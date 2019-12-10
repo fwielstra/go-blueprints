@@ -7,9 +7,10 @@ import (
 )
 
 type client struct {
-	socket   *websocket.Conn
-	send     chan *message
-	room     *room
+	socket *websocket.Conn
+	send   chan *message
+	room   *room
+	// TODO: oauth response, can probably be mapped to a struct.
 	userData map[string]interface{}
 }
 
@@ -25,10 +26,7 @@ func (c *client) read() {
 		// enrich incoming message with timestamp and poster
 		msg.When = time.Now()
 		msg.Name = c.userData["name"].(string)
-		// pattern to get a value that may not be present (e.g. can be nil); ignore error condition.
-		if avatarURL, ok := c.userData["avatar_url"]; ok {
-			msg.AvatarURL = avatarURL.(string)
-		}
+		msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c)
 		c.room.forward <- msg
 	}
 }

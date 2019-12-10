@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -27,12 +29,15 @@ func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+
 	}
 
 	// on success call the next handler
 	h.next.ServeHTTP(w, r)
 }
 
+// MustAuth wraps a HttpHandler with authentication support; the wrapped handler will not be called if authentication
+// fails.
 func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
 }
@@ -50,12 +55,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Error when trying to get provider %s: %s", provider, err), http.StatusBadRequest)
 			return
 		}
-		loginUrl, err := provider.GetBeginAuthURL(nil, nil)
+		loginURL, err := provider.GetBeginAuthURL(nil, nil)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error trying to GetBeginAuthURL for %s: %s", provider, err), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Location", loginUrl)
+		w.Header().Set("Location", loginURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	case "callback":
 		provider, err := gomniauth.Provider(provider)
@@ -76,9 +81,21 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		m := md5.New()
+		_, err = io.WriteString(m, strings.ToLower(user.Email()))
+
+		if err != nil {
+			// TODO: Should do a non user related error handler.
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		userID := fmt.Sprintf("%x", m.Sum(nil))
 		authCookieValue := objx.New(map[string]interface{}{
+			"userid":     userID,
 			"name":       user.Name(),
 			"avatar_url": user.AvatarURL(),
+			"email":      user.Email(),
 		}).MustBase64()
 
 		http.SetCookie(w, &http.Cookie{
